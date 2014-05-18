@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>Loading GPX with Omnivore</title>
+
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+<script src='https://api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.css' rel='stylesheet' />
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<style>
+  body { margin:0; padding:0; }
+  #map { position:absolute; top:0; bottom:0; width:100%; }
+  #time {top:0; right:0; position: absolute;z-index:10000;background-color: #fff;}
+</style>
+</head>
+<body>
+
+
+<script src='leaflet-omnivore.js'></script>
+<div id="time"></div>
+<div id='map'>Working...</div>
+<script>
+
+// omnivore will AJAX-request this file behind the scenes and parse it:
+// note that there are considerations:
+// - The file must either be on the same domain as the page that requests it,
+//   or both the server it is requested from and the user's browser must
+//   support CORS.
+var coordinates, j;
+var arr = {data: [], times: {}};
+var polyline = [];
+var marker = [];
+var assignments = [];
+var groups = {
+    red: {color: '#FF0000', icon: ''},
+    blue: {color: '#0C00FF', icon: ''},
+    green: {color: '#1B8300', icon: ''},
+    yellow: {color: '#FFD400', icon: ''},
+}
+var coeff = 1000 * 60 * .2; // 5 mins
+
+var geojson = omnivore.gpx('../data/combined.gpx')
+    .on('ready', function() {
+        var i = 0;
+        var data = {};
+        $.each(geojson._layers, function(index, layer){
+            coordinates = layer.feature.geometry.coordinates;
+            $.each(layer.feature.geometry.coordinates, function(index2, point){
+                var date = new Date(point[3]);
+                date = new Date(Math.round(date.getTime() / coeff) * coeff);
+                if (data[date] == undefined) {
+                    data[date] = [];
+                }
+                data[date][i] = point;
+            });
+            i++;
+            //console.log(coordinates);+
+        });
+        j = 0;
+        console.log(data);
+        $.each(data, function(index, item){
+            arr.data[j] = {time: index, points: item};
+            arr.times[j] = index;
+            j++;
+        });
+        arr.layers = i+1;
+
+        $('body').html(JSON.stringify(arr));
+
+        var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(arr));
+
+        $('<a href="data:' + data + '" download="data.json">download JSON</a>').appendTo('#map');
+
+
+
+
+    });
+    
+
+
+</script>
+
+
+</body>
+</html>
