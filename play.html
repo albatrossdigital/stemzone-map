@@ -24,6 +24,10 @@
     width: 600px;
     margin: 10px 0 0 20px;
   }
+
+  .button.active {
+    background-color: red !important;
+  }
 </style>
 </head>
 <body>
@@ -33,10 +37,11 @@
 <div id="time"></div>
 
 <div class="icons leaflet-control" id="groups">
-    <i class="button">Everyone</i>
-    <i class="button">Golfers</i>
-    <i class="button">Grounds crew</i>
-    <i class="button">Ops crew</i>
+    <i class="button active" rel="all">Everyone</i>
+    <i class="button" rel="green">G Golfers</i>
+    <i class="button" rel="yellow">Y Grounds crew</i>
+    <i class="button" rel="blue">B Ops crew</i>
+    <i class="button" rel="red">R USGA Staff</i>
 </div>
 
 <div class="leaflet-control" id="playpause">
@@ -85,7 +90,35 @@ $(document).mouseup(function () {
 // Add group buttons
 $('#groups').appendTo('.leaflet-bottom.leaflet-left');
 $('#groups .button').bind('click', function() {
-    alert('asdf');
+    var clicked = $(this).attr('rel');
+    if (clicked == 'all') {
+        allactive = true;
+        $.each(groups, function(index, value) {
+            groups[index].active = 1;
+        });
+        $('#groups .button').removeClass('active');
+        $(this).addClass('active');
+    }
+    else {
+        if (allactive) {
+            $.each(groups, function(index, value) {
+                groups[index].active = 0;
+            });
+            $('#groups .button').removeClass('active');
+            $(this).addClass('active');
+            groups[clicked].active = 1;
+            allactive = false;
+        }
+        else if (groups[clicked].active == 0) {
+            groups[clicked].active = 1;
+            $(this).addClass('active');
+        }
+        else {
+            groups[clicked].active = 0;
+            $(this).removeClass('active');
+        }
+    }
+    tick();
 });
 
 // Add playpause buttomn
@@ -110,9 +143,10 @@ var status = 'pause';
 var groups = {
     red: {color: '#FF0000', icon: '', active: 1},
     blue: {color: '#0C00FF', icon: '', active: 0},
-    green: {color: '#1B8300', icon: '', active: 1},
+    green: {color: '#82FF45', icon: '', active: 1},
     yellow: {color: '#FFD400', icon: '', active: 1},
 }
+var allactive = true;
 
 
 $.getJSON('data.json', function(data) {
@@ -185,7 +219,8 @@ function scrub(newj) {
 function settimer() {
     if (status != 'pause') {
         //console.log(j);
-        if (++j < arr.data.length) timeout = setTimeout(tick, 1); 
+        $('#slider').slider("value", j);
+        if (++j < arr.data.length) timeout = setTimeout(tick, 1);
     }
     
 }
