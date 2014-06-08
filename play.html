@@ -7,46 +7,112 @@
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
 <script src='https://api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.js'></script>
 <link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.css' rel='stylesheet' />
+
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="http://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.2/jquery.ui.touch-punch.min.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+
+<link href='css/app.css' rel='stylesheet' />
 
 <style>
   body { margin:0; padding:0; }
   #map { position:absolute; top:0; bottom:0; width:100%; }
   #time {top:0; right:0; position: absolute;z-index:10000;background-color: #fff;}
+
+  #slider {
+    width: 600px;
+    margin: 10px 0 0 20px;
+  }
 </style>
 </head>
 <body>
 
 
 <script src='leaflet-omnivore.js'></script>
-<div id="time">s</div>
+<div id="time"></div>
+
+<div class="icons leaflet-control" id="groups">
+    <i class="button">Everyone</i>
+    <i class="button">Golfers</i>
+    <i class="button">Grounds crew</i>
+    <i class="button">Ops crew</i>
+</div>
+
+<div class="leaflet-control" id="playpause">
+    <i class="button pause" rel="pause">Play/pause</i>
+</div>
+
 <div id='map'></div>
+
+
 <script>
+// Add map
 var map = L.mapbox.map('map', 'albatrossdigital.i974nk1o', {
+    zoomControl: false,
     center: [39.67450172110415, -84.19841408729553],
     zoom: 16,
     maxZoom: 19,
     minZoom: 13
 });
+new L.Control.Zoom({ position: 'topright' }).addTo(map);
 
-// omnivore will AJAX-request this file behind the scenes and parse it:
-// note that there are considerations:
-// - The file must either be on the same domain as the page that requests it,
-//   or both the server it is requested from and the user's browser must
-//   support CORS.
+// Add zoom control to top-right
+$('.leaflet-top.leaflet-left').html('<div id="slider" class="leaflet-control"></div>');
+
+// Initialize slider
+$("#slider").slider({
+    range: "min",
+    //min: 1,
+    max: 3440,
+    //value: 2,
+    slide: function( event, ui ) {
+      console.log(ui.value);
+      scrub(ui.value);
+      //$( "#amount" ).val( ui.value );
+    }
+});
+//Prevent map panning/zooming while using the slider
+$('#slider').mousedown(function () {
+    map.dragging.disable();
+});
+$(document).mouseup(function () {
+    map.dragging.enable();
+    //Only show the slider timestamp while using the slider
+    //$('#slider-timestamp').html('');
+});
+
+// Add group buttons
+$('#groups').appendTo('.leaflet-bottom.leaflet-left');
+$('#groups .button').bind('click', function() {
+    alert('asdf');
+});
+
+// Add playpause buttomn
+$('#playpause').appendTo('.leaflet-top.leaflet-right');
+$('#playpause .button').bind('click', function() {
+    if ($(this).prop('rel') === 'pause') {
+        pause();
+    }
+    else {
+        play();
+    }
+});
+
+// Init map vars
 var coordinates, j;
 var arr = {data: [], times: {}};
 var polyline = [];
 var marker = [];
 var assignments = [];
+var timeout;
+var status = 'pause';
 var groups = {
-    red: {color: '#FF0000', icon: ''},
-    blue: {color: '#0C00FF', icon: ''},
-    green: {color: '#1B8300', icon: ''},
-    yellow: {color: '#FFD400', icon: ''},
+    red: {color: '#FF0000', icon: '', active: 1},
+    blue: {color: '#0C00FF', icon: '', active: 0},
+    green: {color: '#1B8300', icon: '', active: 1},
+    yellow: {color: '#FFD400', icon: '', active: 1},
 }
-var coeff = 1000 * 60 * .2; // 5 mins
-
 
 
 $.getJSON('data.json', function(data) {
@@ -54,51 +120,101 @@ $.getJSON('data.json', function(data) {
     arr = data;
     console.log(arr);
 
-    var assignments = [];
     for (i = 0; i<arr.layers; i++) {
         var group = i<5 ? 'red' : i<10 ? 'blue' : i<15 ? 'green' : 'yellow';
         assignments[i] = group;
-
         polyline[i] = L.polyline([], {color: groups[assignments[i]].color}).addTo(map);
         marker[i] = L.marker([0, 0], {
             icon: L.mapbox.marker.icon({'marker-color': groups[assignments[i]].color})
-        }).addTo(map);
+        }).addTo(map);       
     }
 
     j = 0;
     tick();
 });
 
+
+function catchup(i, oldj, newj) {
     
+}
+
+
+function play() {
+    status = 'play';
+    settimer();
+    $('#playpause .button').prop('rel', 'pause').addClass('pause active').removeClass('play');
+}
+
+function pause() {
+    status = 'pause';
+    clearInterval(timeout);
+    $('#playpause .button').prop('rel', 'play').addClass('play active').removeClass('pause');
+}
+
+function scrub(newj) {
+    //status = 'pause';
+    clearInterval(timeout);
+
+    for (i = 0; i < arr.layers; i++) {
+        // Point-in-time has changed
+        if (newj != undefined) {
+            var points = [];
+            for (k = 0; k < newj; k++) {
+                if (arr.data[k] != undefined && arr.data[k].points[i] != undefined) {
+                    var point = [arr.data[k].points[i][1], arr.data[k].points[i][0]];
+                    points.push(point);
+                }
+            }
+            polyline[i].setStyle({opacity: .2*groups[assignments[i]].active }).setLatLngs(points);
+            if (arr.data[k] != undefined && arr.data[k].points[i] != undefined) {
+                marker[i].setOpacity( 0.7*groups[assignments[i]].active ).setLatLng(L.latLng(
+                    arr.data[k].points[i][1],
+                    arr.data[k].points[i][0]));
+            }
+        }
+    }
+    j = newj;
+    //status = 'play';
+    tick();
+    //settimer();
+}
+    
+
+// move to the next point in the line or loop to the first point if
+// j runs off the end of the array
+function settimer() {
+    if (status != 'pause') {
+        //console.log(j);
+        if (++j < arr.data.length) timeout = setTimeout(tick, 1); 
+    }
+    
+}
 
 
 function tick() {
-    // set the marker to be at the same point as one of the segments
-    // of the line
-    for (i = 0; i<arr.layers; i++) {
-        if (arr.data[j] != undefined && arr.data[j].points[i] != undefined) {
-            $('#time').text(arr.times[j]);
-            polyline[i].setStyle({opacity: .2}).addLatLng(
-                L.latLng(
+
+    if (status != 'pause') {
+        for (i = 0; i < arr.layers; i++) {
+            if (arr.data[j] != undefined && arr.data[j].points[i] != undefined) {
+                $('#time').text(arr.times[j]);
+                polyline[i].setStyle({opacity: .2*groups[assignments[i]].active}).addLatLng(
+                    L.latLng(
+                        arr.data[j].points[i][1],
+                        arr.data[j].points[i][0]));
+
+                marker[i].setOpacity(0.7*groups[assignments[i]].active).setLatLng(L.latLng(
                     arr.data[j].points[i][1],
                     arr.data[j].points[i][0]));
-
-            marker[i].setOpacity(0.7).setLatLng(L.latLng(
-                arr.data[j].points[i][1],
-                arr.data[j].points[i][0]));
-        }
-        else if (arr.data[j] != undefined) {
-            polyline[i].setStyle({opacity: 0});
-            marker[i].setOpacity(0);
-        }
+            }
+            else if (arr.data[j] != undefined) {
+                //polyline[i].setStyle({opacity: 0});
+                marker[i].setOpacity(0);
+            }
+        }  
+        
+        settimer();
     }
-    /**/
-
-     
-
-    // move to the next point in the line or loop to the first point if
-    // j runs off the end of the array
-    if (++j < arr.data.length) setTimeout(tick, 1);
+   
 }
 </script>
 
