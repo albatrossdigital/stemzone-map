@@ -15,6 +15,9 @@
 
 <link href='css/app.css' rel='stylesheet' />
 
+<script type="text/javascript" src="http://www.datejs.com/build/date.js"></script>
+
+
 <style>
   body { margin:0; padding:0; }
   #map { position:absolute; top:0; bottom:0; width:100%; }
@@ -32,16 +35,14 @@
 </head>
 <body>
 
-
-<script src='leaflet-omnivore.js'></script>
 <div id="time"></div>
 
 <div class="icons leaflet-control" id="groups">
     <i class="button active" rel="all">Everyone</i>
-    <i class="button" rel="green">G Golfers</i>
-    <i class="button" rel="yellow">Y Grounds crew</i>
-    <i class="button" rel="blue">B Ops crew</i>
-    <i class="button" rel="red">R USGA Staff</i>
+    <i class="button" rel="red">R USGA Rules & Course Set-up</i>
+    <i class="button" rel="blue">B Championship Broadcast</i>
+    <i class="button" rel="green">G USGA Green Section</i>
+    <i class="button" rel="yellow">Y USGA Championship Operations</i>
 </div>
 
 <div class="leaflet-control" id="playpause">
@@ -55,21 +56,22 @@
 // Add map
 var map = L.mapbox.map('map', 'albatrossdigital.i974nk1o', {
     zoomControl: false,
-    center: [39.67450172110415, -84.19841408729553],
+    center: [35.18870691044688, -79.46142911911011],
     zoom: 16,
     maxZoom: 19,
     minZoom: 13
 });
+
 new L.Control.Zoom({ position: 'topright' }).addTo(map);
 
 // Add zoom control to top-right
-$('.leaflet-top.leaflet-left').html('<div id="slider" class="leaflet-control"></div>');
+$('#slider-wrapper').appendTo('.leaflet-top.leaflet-left');
 
 // Initialize slider
 $("#slider").slider({
     range: "min",
-    //min: 1,
-    max: 3440,
+    min: 370,
+    max: 1100,
     //value: 2,
     slide: function( event, ui ) {
       console.log(ui.value);
@@ -117,6 +119,7 @@ $('#groups .button').bind('click', function() {
             groups[clicked].active = 0;
             $(this).removeClass('active');
         }
+        scrub(j);
     }
     tick();
 });
@@ -141,10 +144,10 @@ var assignments = [];
 var timeout;
 var status = 'pause';
 var groups = {
-    red: {color: '#FF0000', icon: '', active: 1},
-    blue: {color: '#0C00FF', icon: '', active: 0},
-    green: {color: '#82FF45', icon: '', active: 1},
-    yellow: {color: '#FFD400', icon: '', active: 1},
+    red: {color: '#FF0000', icon: '', lineopactiy: .2, active: 1},
+    blue: {color: '#0C00FF', icon: '', lineopactiy: .2, active: 1},
+    green: {color: '#82FF45', icon: '', lineopactiy: .1, active: 1},
+    yellow: {color: '#FFD400', icon: '', lineopactiy: .1, active: 1},
 }
 var allactive = true;
 
@@ -155,7 +158,7 @@ $.getJSON('data.json', function(data) {
     console.log(arr);
 
     for (i = 0; i<arr.layers; i++) {
-        var group = i<5 ? 'red' : i<10 ? 'blue' : i<15 ? 'green' : 'yellow';
+        var group = i<19 ? 'red' : i<31 ? 'blue' : i<62 ? 'green' : 'yellow';
         assignments[i] = group;
         polyline[i] = L.polyline([], {color: groups[assignments[i]].color}).addTo(map);
         marker[i] = L.marker([0, 0], {
@@ -163,7 +166,7 @@ $.getJSON('data.json', function(data) {
         }).addTo(map);       
     }
 
-    j = 0;
+    j = 370;
     tick();
 });
 
@@ -189,7 +192,7 @@ function scrub(newj) {
     //status = 'pause';
     clearInterval(timeout);
 
-    for (i = 0; i < arr.layers; i++) {
+    for (i = 370; i < arr.layers; i++) {
         // Point-in-time has changed
         if (newj != undefined) {
             var points = [];
@@ -199,7 +202,8 @@ function scrub(newj) {
                     points.push(point);
                 }
             }
-            polyline[i].setStyle({opacity: .2*groups[assignments[i]].active }).setLatLngs(points);
+            opacity = allactive ? 0 : groups[assignments[i]].lineopactiy*groups[assignments[i]].active;
+            polyline[i].setStyle({opacity: opacity }).setLatLngs(points);
             if (arr.data[k] != undefined && arr.data[k].points[i] != undefined) {
                 marker[i].setOpacity( 0.7*groups[assignments[i]].active ).setLatLng(L.latLng(
                     arr.data[k].points[i][1],
@@ -220,7 +224,7 @@ function settimer() {
     if (status != 'pause') {
         //console.log(j);
         $('#slider').slider("value", j);
-        if (++j < arr.data.length) timeout = setTimeout(tick, 1);
+        if (++j < 1100) timeout = setTimeout(tick, 33);
     }
     
 }
@@ -229,13 +233,19 @@ function settimer() {
 function tick() {
 
     if (status != 'pause') {
+        var date = new Date(arr.times[j]);
+        console.log(date.getHours());
+        $('#time').text(j+' June 5, 2014 '+date.toString("h:mm tt"));
+
         for (i = 0; i < arr.layers; i++) {
             if (arr.data[j] != undefined && arr.data[j].points[i] != undefined) {
-                $('#time').text(arr.times[j]);
-                polyline[i].setStyle({opacity: .2*groups[assignments[i]].active}).addLatLng(
-                    L.latLng(
-                        arr.data[j].points[i][1],
-                        arr.data[j].points[i][0]));
+                if (!allactive && groups[assignments[i]].active) {
+                   var opacity = !allactive ? groups[assignments[i]].lineopactiy*groups[assignments[i]].active : 0;
+                    polyline[i].setStyle({opacity: opacity}).addLatLng(
+                        L.latLng(
+                            arr.data[j].points[i][1],
+                            arr.data[j].points[i][0])); 
+                }
 
                 marker[i].setOpacity(0.7*groups[assignments[i]].active).setLatLng(L.latLng(
                     arr.data[j].points[i][1],
@@ -245,12 +255,23 @@ function tick() {
                 //polyline[i].setStyle({opacity: 0});
                 marker[i].setOpacity(0);
             }
+            if(allactive || !groups[assignments[i]].active) {
+                polyline[i].setStyle({opacity: 0});
+            }
+
         }  
         
-        settimer();
+        if (status == 'pausenext') {
+            status = 'pause';
+        }
+        else {
+            settimer();
+        }
+        
     }
    
 }
+
 </script>
 
 

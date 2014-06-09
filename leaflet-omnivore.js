@@ -712,7 +712,7 @@ module.exports = function(x, dims) {
                 gj = fc();
             for (i = 0; i < tracks.length; i++) {
                 gj.features.push(getLinestring(tracks[i], 'trkpt'));
-                console.log(tracks);
+                //console.log(tracks);
             }
             for (i = 0; i < routes.length; i++) {
                 gj.features.push(getLinestring(routes[i], 'rtept'));
@@ -720,7 +720,7 @@ module.exports = function(x, dims) {
             for (i = 0; i < waypoints.length; i++) {
                 gj.features.push(getPoint(waypoints[i]));
             }
-            console.log(gj.features);
+            //console.log(gj.features);
             function getLinestring(node, pointname) {
                 var j, pts = get(node, pointname), line = [], properties = getProperties(node);
                 for (j = 0; j < pts.length; j++) {

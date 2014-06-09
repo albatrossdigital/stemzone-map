@@ -20,7 +20,27 @@
 
 <script src='leaflet-omnivore.js'></script>
 <div id="time"></div>
-<div id='map'>Working...</div>
+files:
+<textarea id="paths" rows=30 cols=120>
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC1.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC2.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC3.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC4.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC5.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC6.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC7.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC8.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC9.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC10.gpx
+</textarea>
+
+
+<input type="submit" value="generate" id="submit">
+
+<div id='working'>Working...</div>
+
+<div id="times"></div>
+
 <script>
 
 // omnivore will AJAX-request this file behind the scenes and parse it:
@@ -39,44 +59,97 @@ var groups = {
     green: {color: '#1B8300', icon: ''},
     yellow: {color: '#FFD400', icon: ''},
 }
-var coeff = 1000 * 60 * .2; // 5 mins
+var data = {};
+var coeff = 1000 * 60 * .5; // 30 s
 
-var geojson = omnivore.gpx('../data/combined.gpx')
-    .on('ready', function() {
-        var i = 0;
-        var data = {};
-        $.each(geojson._layers, function(index, layer){
-            coordinates = layer.feature.geometry.coordinates;
-            $.each(layer.feature.geometry.coordinates, function(index2, point){
-                var date = new Date(point[3]);
-                date = new Date(Math.round(date.getTime() / coeff) * coeff);
-                if (data[date] == undefined) {
-                    data[date] = [];
-                }
-                data[date][i] = point;
+var enddate = new Date('Thu Jun 05 2014 16:30:00 GMT-0700 (PDT)');
+
+
+$('#working').hide();
+$('#submit').bind('click', function() {
+    alert('asdf');
+    $('#working').show();
+
+    console.log($('#paths').val());
+    var paths = $('#paths').val().split("\n");
+    var i = 0;
+    console.log(paths);
+    
+
+    $.each(paths, function(index, file) {
+
+        
+
+        var geojson = omnivore.gpx(file.replace('/home/jeff/workspace/stemzone-map/', ''))
+            .on('ready', function() {
+
+                //console.log(geojson._layers);
+
+                var coordinates;
+                
+                $.each(geojson._layers, function(index, layer){
+                    coordinates = layer.feature.geometry.coordinates;
+                    //console.log(coordinates);
+                    $.each(layer.feature.geometry.coordinates, function(index2, point){
+                        var date = new Date(point[3]);
+                        date = new Date(Math.round(date.getTime() / coeff) * coeff);
+                        if (date <= enddate) {
+                            if (data[date] == undefined) {
+                                data[date] = [];
+                            }
+                            data[date][i] = point;
+                        }
+                    });
+
+                    // a little log so we can figure out times
+                    var keys = Object.keys(data);
+                    var start = new Date(keys[0]);
+                    var end = new Date(keys[keys.length - 1]);
+                    var diff = end - start;
+                    diff = diff / 1000/60/60;
+                    $('#times').html($('#times').html() + ','+ file + ','+keys[0]+','+keys[keys.length - 1]+','+ diff +"<br/>");
+
+                    i++;
+
+                    if (i == paths.length-1) {
+                        j = 0;
+                        console.log(data);
+                        $.each(data, function(index, item){
+                            arr.data[j] = {time: index, points: item};
+                            arr.times[j] = index;
+                            j++;
+                        });
+                        arr.layers = i+1;
+
+                        $('body').html(JSON.stringify(arr));
+
+                        
+                    }
+                    //console.log(i+' '+paths.length-1);
+                    //console.log(coordinates);+
+                });
+                
+
             });
-            i++;
-            //console.log(coordinates);+
-        });
-        j = 0;
-        console.log(data);
-        $.each(data, function(index, item){
-            arr.data[j] = {time: index, points: item};
-            arr.times[j] = index;
-            j++;
-        });
-        arr.layers = i+1;
-
-        $('body').html(JSON.stringify(arr));
-
-        var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(arr));
-
-        $('<a href="data:' + data + '" download="data.json">download JSON</a>').appendTo('#map');
-
-
-
-
+    })
+    
+    /*
+    j = 0;
+    console.log(data);
+    $.each(data, function(index, item){
+        arr.data[j] = {time: index, points: item};
+        arr.times[j] = index;
+        j++;
     });
+    arr.layers = i+1;
+
+    $('body').html(JSON.stringify(arr));
+
+    var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(arr));
+
+    $('<a href="data:' + data + '" download="data.json">download JSON</a>').appendTo('#map');*/
+
+})
     
 
 
