@@ -36,7 +36,7 @@
 <body>
 
 <div class="icons leaflet-control" id="groups">
-    <i class="button active" rel="all">Everyone</i>
+    <i class="button active" rel="all" id="all">Everyone</i>
     <i class="button" rel="red">R USGA Rules & Course Set-up</i>
     <i class="button" rel="blue">B Championship Broadcast</i>
     <i class="button" rel="green">G USGA Green Section</i>
@@ -147,7 +147,7 @@ var polyline = [];
 var marker = [];
 var assignments = [];
 var timeout;
-var status = 'pause';
+var status = 'play';
 var groups = {
     red: {color: '#FF0000', icon: '', lineopactiy: .2, active: 1},
     blue: {color: '#0C00FF', icon: '', lineopactiy: .2, active: 1},
@@ -176,10 +176,6 @@ $.getJSON('data.json', function(data) {
 });
 
 
-function catchup(i, oldj, newj) {
-    
-}
-
 
 function play() {
     status = 'play';
@@ -197,18 +193,18 @@ function scrub(newj) {
     //status = 'pause';
     clearInterval(timeout);
 
-    for (i = 370; i < arr.layers; i++) {
+    for (i = 0; i < arr.layers; i++) {
         // Point-in-time has changed
         if (newj != undefined) {
             var points = [];
-            for (k = 0; k < newj; k++) {
+            for (k = 370; k < newj; k++) {
                 if (arr.data[k] != undefined && arr.data[k].points[i] != undefined) {
                     var point = [arr.data[k].points[i][1], arr.data[k].points[i][0]];
                     points.push(point);
                 }
             }
             opacity = allactive ? 0 : groups[assignments[i]].lineopactiy*groups[assignments[i]].active;
-            polyline[i].setStyle({opacity: opacity }).setLatLngs([]);
+            polyline[i].setStyle({opacity: opacity }).setLatLngs(points);
             if (arr.data[k] != undefined && arr.data[k].points[i] != undefined) {
                 marker[i].setOpacity( 0.7*groups[assignments[i]].active ).setLatLng(L.latLng(
                     arr.data[k].points[i][1],
@@ -217,9 +213,9 @@ function scrub(newj) {
         }
     }
     j = newj;
-    //status = 'play';
-    tick();
-    //settimer();
+    status = 'play';
+    //tick();
+    settimer();
 }
     
 
@@ -229,14 +225,22 @@ function settimer() {
     if (status != 'pause') {
         //console.log(j);
         $('#slider').slider("value", j);
+        clearInterval(timeout);
         if (++j < 1100) {
             timeout = setTimeout(tick, 33);
         }
         else {
-            
+            timeout = setTimeout(function() {
+                reset();
+            }, 5000);
         }
     }
     
+}
+
+function reset() {
+    $('#all').trigger('click');
+    scrub(370);
 }
 
 
