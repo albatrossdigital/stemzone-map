@@ -35,8 +35,6 @@
 </head>
 <body>
 
-<div id="time"></div>
-
 <div class="icons leaflet-control" id="groups">
     <i class="button active" rel="all">Everyone</i>
     <i class="button" rel="red">R USGA Rules & Course Set-up</i>
@@ -46,7 +44,14 @@
 </div>
 
 <div class="leaflet-control" id="playpause">
-    <i class="button pause" rel="pause">Play/pause</i>
+    <!--<i class="button pause" rel="pause">Play/pause</i>-->
+</div>
+
+
+<div id="slider-wrapper" class="leaflet-control">
+    <div class="date">June 5, 2014</div>
+    <div id="slider"></div>
+    <div class="time" id="time"></div>
 </div>
 
 <div id='map'></div>
@@ -65,7 +70,7 @@ var map = L.mapbox.map('map', 'albatrossdigital.i974nk1o', {
 new L.Control.Zoom({ position: 'topright' }).addTo(map);
 
 // Add zoom control to top-right
-$('#slider-wrapper').appendTo('.leaflet-top.leaflet-left');
+$('.leaflet-top.leaflet-left');
 
 // Initialize slider
 $("#slider").slider({
@@ -203,7 +208,7 @@ function scrub(newj) {
                 }
             }
             opacity = allactive ? 0 : groups[assignments[i]].lineopactiy*groups[assignments[i]].active;
-            polyline[i].setStyle({opacity: opacity }).setLatLngs(points);
+            polyline[i].setStyle({opacity: opacity }).setLatLngs([]);
             if (arr.data[k] != undefined && arr.data[k].points[i] != undefined) {
                 marker[i].setOpacity( 0.7*groups[assignments[i]].active ).setLatLng(L.latLng(
                     arr.data[k].points[i][1],
@@ -224,22 +229,23 @@ function settimer() {
     if (status != 'pause') {
         //console.log(j);
         $('#slider').slider("value", j);
-        if (++j < 1100) timeout = setTimeout(tick, 33);
+        if (++j < 1100) {
+            timeout = setTimeout(tick, 33);
+        }
+        else {
+            
+        }
     }
     
 }
 
 
 function tick() {
-
+    $('#time').text(j+' June 5, 2014 '+ new Date(arr.times[j]).toString("h:mm tt"));
     if (status != 'pause') {
-        var date = new Date(arr.times[j]);
-        console.log(date.getHours());
-        $('#time').text(j+' June 5, 2014 '+date.toString("h:mm tt"));
-
         for (i = 0; i < arr.layers; i++) {
             if (arr.data[j] != undefined && arr.data[j].points[i] != undefined) {
-                if (!allactive && groups[assignments[i]].active) {
+                if (groups[assignments[i]].active) {
                    var opacity = !allactive ? groups[assignments[i]].lineopactiy*groups[assignments[i]].active : 0;
                     polyline[i].setStyle({opacity: opacity}).addLatLng(
                         L.latLng(
