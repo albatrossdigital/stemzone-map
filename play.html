@@ -15,32 +15,132 @@
 
 <link href='css/app.css' rel='stylesheet' />
 
-<script type="text/javascript" src="http://www.datejs.com/build/date.js"></script>
+<script type="text/javascript" src="date.js"></script>
 
 
 <style>
-  body { margin:0; padding:0; }
-  #map { position:absolute; top:0; bottom:0; width:100%; }
-  #time {top:0; right:0; position: absolute;z-index:10000;background-color: #fff;}
+body {
+    margin:0; padding:0; 
+    font-weight: bold;
+    color: #fff;
+}
+#map { position:absolute; top:0; bottom:0; width:100%; }
 
-  #slider {
-    width: 600px;
-    margin: 10px 0 0 20px;
-  }
+#slider-wrapper {
+    width: 1200px;
+    margin: 20px 0 0 300px;
+    text-align: center;
+    font-size: 25px;
+    line-height: 45px;
+    text-shadow: 0 0 #489AD8;
+}
 
-  .button.active {
-    background-color: red !important;
-  }
+#slider {
+    font-size: 18px;
+    background: rgba(255,255,255,0.2) !important;
+    border-color: #fff !important;
+}
+
+.ui-slider-range {
+    background: #fff !important;
+    border-color: #fff !important;
+}
+
+.ui-slider-handle {
+    background: #489AD8 !important;
+    border: none !important;
+    width: 40px !important;
+}
+
+#groups .button {
+    padding-left: 90px;
+    background: 20px center no-repeat;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: bold;
+    text-transform:  uppercase;
+    line-height: 40px;
+    margin-left: 10px;
+    border-radius: 10px;
+    opacity: .9;
+    border: 2px solid transparent;
+}
+
+#groups .button#all {
+    background-image: url(images/everyone.png);
+    background-color: #DB8438;
+}
+
+#groups .button.red {
+    background-image: url(images/rules.png);
+    background-color: #C44F3A;
+}
+
+#groups .button.blue {
+    background-image: url(images/broadcast.png);
+    background-color: #489AD8;
+}
+
+#groups .button.green {
+    background-image: url(images/green.png);
+    background-color: #64C271;
+}
+
+#groups .button.yellow {
+    background-image: url(images/operations.png);
+    background-color: #DAB849;
+}
+
+#groups .button.active {
+    opacity: 1;
+    border-color: #fff;
+}
+
+.icon-text {
+    color: #fff;
+    font-weight: bold;
+    font-size: 20px;
+    text-align: center;
+    line-height: 40px;
+    margin-bottom: 10px;
+}
+
+.icon-text-inner {
+    background: rgba(0,0,0,0.5) !important;
+    padding: 5px;
+}
+
+
+.leaflet-control-zoom a {
+    width: 48px !important;
+    height: 48px !important;
+    background: center no-repeat !important;
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-out {
+    background-image: url(images/zoomout.png) !important;
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-in {
+    background-image: url(images/zoomin.png) !important;
+}
+
+
+
+
+
+
 </style>
 </head>
 <body>
 
 <div class="icons leaflet-control" id="groups">
+    <div class="icon-text" id="message"><span class="icon-text-inner">Click on a type of USGA staffer below to see their path or drag the timebar to time travel.</span></div>
     <i class="button active" rel="all" id="all">Everyone</i>
-    <i class="button" rel="red">R USGA Rules & Course Set-up</i>
-    <i class="button" rel="blue">B Championship Broadcast</i>
-    <i class="button" rel="green">G USGA Green Section</i>
-    <i class="button" rel="yellow">Y USGA Championship Operations</i>
+    <i class="button red" rel="red">USGA Rules & Course Set-up</i>
+    <i class="button blue" rel="blue">Championship Broadcast</i>
+    <i class="button green" rel="green">USGA Green Section</i>
+    <i class="button yellow" rel="yellow">USGA Championship Operations</i>
 </div>
 
 <div class="leaflet-control" id="playpause">
@@ -105,6 +205,7 @@ $('#groups .button').bind('click', function() {
         });
         $('#groups .button').removeClass('active');
         $(this).addClass('active');
+        map.setView([35.18870691044688, -79.46142911911011], 16, {animate: true});
     }
     else {
         if (allactive) {
@@ -124,6 +225,23 @@ $('#groups .button').bind('click', function() {
             groups[clicked].active = 0;
             $(this).removeClass('active');
         }
+        
+        // set zoom
+        if (allactive || groups[clicked].active == 1) {
+           if (clicked == 'red') {
+                map.setView([35.18870691044688, -79.46142911911011], 16, {animate: true});
+            }
+            else if (clicked == 'blue') {
+                map.setView([35.18885158615344, -79.46196556091309], 17, {animate: true});
+            }
+            else if (clicked == 'green') { 
+                map.setView([35.189463166975976, -79.45772767066956], 18, {animate: true});
+            }
+            else if (clicked == 'yellow') {
+                map.setView([35.17377323863265, -79.43681716918944], 14, {animate: true});
+            } 
+        }
+        
         scrub(j);
     }
     tick();
@@ -151,7 +269,7 @@ var status = 'play';
 var groups = {
     red: {color: '#FF0000', icon: '', lineopactiy: .2, active: 1},
     blue: {color: '#0C00FF', icon: '', lineopactiy: .2, active: 1},
-    green: {color: '#82FF45', icon: '', lineopactiy: .1, active: 1},
+    green: {color: '#2AD000', icon: '', lineopactiy: .1, active: 1},
     yellow: {color: '#FFD400', icon: '', lineopactiy: .1, active: 1},
 }
 var allactive = true;
@@ -227,12 +345,13 @@ function settimer() {
         $('#slider').slider("value", j);
         clearInterval(timeout);
         if (++j < 1100) {
-            timeout = setTimeout(tick, 33);
+            timeout = setTimeout(tick, 50);
         }
         else {
+            $('#message').fadeIn();
             timeout = setTimeout(function() {
                 reset();
-            }, 5000);
+            }, 8000);
         }
     }
     
@@ -240,12 +359,13 @@ function settimer() {
 
 function reset() {
     $('#all').trigger('click');
+    $('#message').hide();
     scrub(370);
 }
 
 
 function tick() {
-    $('#time').text(j+' June 5, 2014 '+ new Date(arr.times[j]).toString("h:mm tt"));
+    $('#time').text(new Date(arr.times[j]).toString("h:mm tt"));
     if (status != 'pause') {
         for (i = 0; i < arr.layers; i++) {
             if (arr.data[j] != undefined && arr.data[j].points[i] != undefined) {
