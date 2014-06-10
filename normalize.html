@@ -9,6 +9,9 @@
 <link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.1/mapbox.css' rel='stylesheet' />
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 
+<script type="text/javascript" src="date.js"></script>
+
+
 <style>
   body { margin:0; padding:0; }
   #map { position:absolute; top:0; bottom:0; width:100%; }
@@ -62,7 +65,8 @@ var groups = {
 var data = {};
 var coeff = 1000 * 60 * .5; // 30 s
 
-var enddate = new Date('Thu Jun 05 2014 16:30:00 GMT-0700 (PDT)');
+var startdate = new Date('Thu Jun 05 2014 06:00:00 GMT-0700 (PDT)');
+var enddate = new Date('Thu Jun 05 2014 14:00:00 GMT-0700 (PDT)');
 
 
 $('#working').hide();
@@ -73,32 +77,38 @@ $('#submit').bind('click', function() {
     console.log($('#paths').val());
     var paths = $('#paths').val().split("\n");
     var i = 0;
+    var ii = 0;
     console.log(paths);
     
 
-    $.each(paths, function(index, file) {
+    $.each(paths, function(index, filestr) {
 
         
-
+        var filearr = filestr.split("\t");
+        console.log(filearr);
+        var file = filearr[0];
         var geojson = omnivore.gpx(file.replace('/home/jeff/workspace/stemzone-map/', ''))
             .on('ready', function() {
 
                 //console.log(geojson._layers);
 
-                var coordinates;
-                
+                //var coordinates;
+
                 $.each(geojson._layers, function(index, layer){
-                    coordinates = layer.feature.geometry.coordinates;
+                    var coordinates = layer.feature.geometry.coordinates;
+                    assignments[i] = filearr[1];
                     //console.log(coordinates);
-                    $.each(layer.feature.geometry.coordinates, function(index2, point){
+                    $.each(coordinates, function(index2, point){
                         var date = new Date(point[3]);
                         date = new Date(Math.round(date.getTime() / coeff) * coeff);
-                        if (date <= enddate) {
-                            if (data[date] == undefined) {
-                                data[date] = [];
-                            }
-                            data[date][i] = point;
+                        // Reset markers from Jun 6 to Jun 5
+                        if (date > enddate) {
+                            date = new Date(date.getTime() - 1000*60*60*24);
                         }
+                        if (data[date] == undefined) {
+                            data[date] = [];
+                        }
+                        data[date][i] = point;
                     });
 
                     // a little log so we can figure out times
@@ -111,15 +121,20 @@ $('#submit').bind('click', function() {
 
                     i++;
 
+                    // We have gone through the last of the files
                     if (i == paths.length-1) {
                         j = 0;
                         console.log(data);
+                        arr.assignments = assignments;
                         $.each(data, function(index, item){
-                            arr.data[j] = {time: index, points: item};
-                            arr.times[j] = index;
-                            j++;
+                            var date = new Date(index);
+                            if (date >= startdate && date <= enddate) {
+                                arr.data[j] = {time: index, points: item};
+                                arr.times[j] = index;
+                                j++;
+                            }
                         });
-                        arr.layers = i+1;
+                        console.log(arr);
 
                         $('body').html(JSON.stringify(arr));
 
@@ -133,21 +148,20 @@ $('#submit').bind('click', function() {
             });
     })
     
-    /*
-    j = 0;
+    
+    /*j = 0;
     console.log(data);
     $.each(data, function(index, item){
         arr.data[j] = {time: index, points: item};
         arr.times[j] = index;
         j++;
     });
-    arr.layers = i+1;
+    arr.layers = i+1;*/
 
-    $('body').html(JSON.stringify(arr));
+    //$('body').html(JSON.stringify(arr));
 
-    var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(arr));
-
-    $('<a href="data:' + data + '" download="data.json">download JSON</a>').appendTo('#map');*/
+    //var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(arr));
+    //$('<a href="data:' + data + '" download="data.json">download JSON</a>').appendTo('#map');*/
 
 })
     

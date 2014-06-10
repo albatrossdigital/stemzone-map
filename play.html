@@ -13,6 +13,9 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.2/jquery.ui.touch-punch.min.js"></script>
 <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
 
+<script type="text/javascript" src="//use.typekit.net/nxr2ckb.js"></script>
+<script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+
 <link href='css/app.css' rel='stylesheet' />
 
 <script type="text/javascript" src="date.js"></script>
@@ -24,6 +27,15 @@ body {
     font-weight: bold;
     color: #fff;
 }
+
+.button,
+#time,
+.icon-text {
+    font-family: "alternate-gothic-no-3-d" !important;
+    font-size: 25px !important;
+}
+
+
 #map { position:absolute; top:0; bottom:0; width:100%; }
 
 #slider-wrapper {
@@ -57,7 +69,6 @@ body {
     background: 20px center no-repeat;
     font-size: 18px;
     font-style: normal;
-    font-weight: bold;
     text-transform:  uppercase;
     line-height: 40px;
     margin-left: 10px;
@@ -98,7 +109,6 @@ body {
 
 .icon-text {
     color: #fff;
-    font-weight: bold;
     font-size: 20px;
     text-align: center;
     line-height: 40px;
@@ -135,7 +145,7 @@ body {
 <body>
 
 <div class="icons leaflet-control" id="groups">
-    <div class="icon-text" id="message"><span class="icon-text-inner">Click on a type of USGA staffer below to see their path or drag the timebar to travel in time.</span></div>
+    <div class="icon-text" id="message"><span class="icon-text-inner">Drag the timebar back in time and click on a type of USGA staffer below to see their path.</span></div>
     <i class="button active" rel="all" id="all">Everyone</i>
     <i class="button red" rel="red">USGA Rules & Course Set-up</i>
     <i class="button blue" rel="blue">Championship Broadcast</i>
@@ -158,6 +168,8 @@ body {
 
 
 <script>
+var max = 930;
+
 // Add map
 var map = L.mapbox.map('map', 'albatrossdigital.i974nk1o', {
     zoomControl: false,
@@ -175,8 +187,8 @@ $('.leaflet-top.leaflet-left');
 // Initialize slider
 $("#slider").slider({
     range: "min",
-    min: 370,
-    max: 1100,
+    min: 0,
+    max: max,
     //value: 2,
     slide: function( event, ui ) {
       console.log(ui.value);
@@ -232,10 +244,10 @@ $('#groups .button').bind('click', function() {
                 map.setView([35.18870691044688, -79.46142911911011], 16, {animate: true});
             }
             else if (clicked == 'blue') {
-                map.setView([35.18885158615344, -79.46196556091309], 17, {animate: true});
+                map.setView([35.189463166975976, -79.45772767066956], 18, {animate: true});
             }
             else if (clicked == 'green') { 
-                map.setView([35.189463166975976, -79.45772767066956], 18, {animate: true});
+                map.setView([35.18885158615344, -79.46196556091309], 17, {animate: true});
             }
             else if (clicked == 'yellow') {
                 map.setView([35.17377323863265, -79.43681716918944], 14, {animate: true});
@@ -263,33 +275,35 @@ var coordinates, j;
 var arr = {data: [], times: {}};
 var polyline = [];
 var marker = [];
-var assignments = [];
+
 var timeout;
 var status = 'play';
+var assignments;
 var groups = {
-    red: {color: '#FF0000', icon: '', lineopactiy: .2, active: 1},
-    blue: {color: '#0C00FF', icon: '', lineopactiy: .2, active: 1},
-    green: {color: '#2AD000', icon: '', lineopactiy: .1, active: 1},
-    yellow: {color: '#FFD400', icon: '', lineopactiy: .1, active: 1},
+    red: {color: '#FF0000', markercolor: '#C44F3A', icon: '', lineopactiy: .2, active: 1},
+    blue: {color: '#0C00FF', markercolor: '#489AD8', icon: '', lineopactiy: .2, active: 1},
+    green: {color: '#2AD000', markercolor: '#64C271', icon: '', lineopactiy: .2, active: 1},
+    yellow: {color: '#FFD400', markercolor: '#DAB849', icon: '', lineopactiy: .2, active: 1},
 }
 var allactive = true;
-
 
 $.getJSON('data.json', function(data) {
     //map.fitBounds(geojson.getBounds());
     arr = data;
-    console.log(arr);
+    arr.layers = arr.assignments.length;
+    assignments = arr.assignments;
+    //console.log(arr);
 
     for (i = 0; i<arr.layers; i++) {
         var group = i<19 ? 'red' : i<31 ? 'blue' : i<62 ? 'green' : 'yellow';
-        assignments[i] = group;
+        //assignments[i] = group;
         polyline[i] = L.polyline([], {color: groups[assignments[i]].color}).addTo(map);
         marker[i] = L.marker([0, 0], {
             icon: L.mapbox.marker.icon({'marker-color': groups[assignments[i]].color})
         }).addTo(map);       
     }
 
-    j = 370;
+    j = 0;
     tick();
 });
 
@@ -315,7 +329,7 @@ function scrub(newj) {
         // Point-in-time has changed
         if (newj != undefined) {
             var points = [];
-            for (k = 370; k < newj; k++) {
+            for (k = 0; k < newj; k++) {
                 if (arr.data[k] != undefined && arr.data[k].points[i] != undefined) {
                     var point = [arr.data[k].points[i][1], arr.data[k].points[i][0]];
                     points.push(point);
@@ -344,7 +358,7 @@ function settimer() {
         //console.log(j);
         $('#slider').slider("value", j);
         clearInterval(timeout);
-        if (++j < 1100) {
+        if (++j < max) {
             timeout = setTimeout(tick, 50);
         }
         else {
@@ -360,7 +374,7 @@ function settimer() {
 function reset() {
     $('#all').trigger('click');
     $('#message').hide();
-    scrub(370);
+    scrub(0);
 }
 
 
