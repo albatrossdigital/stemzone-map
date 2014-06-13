@@ -25,12 +25,16 @@
 <div id="time"></div>
 files:
 <textarea id="paths" rows=30 cols=120>
-WORKING/kml/doc.kml
-WORKING/kml/doc.kml (4)
-WORKING/kml/doc.kml (2)
-WORKING/kml/doc.kml (5)
-WORKING/kml/doc.kml (3)
-WORKING/kml/doc.kml (6)
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC1.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC2.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC3.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC4.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC5.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC6.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC7.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC8.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC9.gpx
+/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC10.gpx
 </textarea>
 
 
@@ -59,7 +63,7 @@ var groups = {
     yellow: {color: '#FFD400', icon: ''},
 }
 var data = {};
-var coeff = 1000 * 60 * .2; // .2m
+var coeff = 1000 * 60 * .5; // .2m
 
 var startdate = new Date('Thu Jun 05 2014 06:00:00 GMT-0700 (PDT)');
 var enddate = new Date('Thu Jun 05 2014 14:00:00 GMT-0700 (PDT)');
@@ -84,9 +88,8 @@ $('#submit').bind('click', function() {
         var filearr = filestr.split("\t");
         console.log(filearr);
         var file = filearr[0];
-        var geojson = omnivore.kml(file)
+        var geojson = omnivore.gpx(file.replace('/home/jeff/workspace/stemzone-map/', ''))
             .on('ready', function() {
-                console.log(geojson);
 
                 //console.log(geojson._layers);
 
@@ -108,18 +111,22 @@ $('#submit').bind('click', function() {
                         if (data[date] == undefined) {
                             data[date] = [];
                         }
-                        if (last != null) {
+                        /*if (last != null) {
                             var latlng = L.latLng(last[1], last[0]);
-                            if (latlng != undefined) {
+                            if latlng != undefined) {
                                 var diff = latlng.distanceTo([point[1], point[0]]);
-                                if (diff > 150) {
-                                    i++;
-                                    total ++;
-                                    assignments[i] = filearr[1];
+                                if (diff > 500) {
+                                    //i++;
+                                    //total ++;
+                                    //assignments[i] = filearr[1];
+                                    console.log(total);
+                                    console.log(diff);
+                                    console.log(point);
+                                    console.log(last);
                                 }
                             }
                             
-                        }
+                        }*/
                         
                         data[date][i] = point;
                         last = point;
