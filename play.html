@@ -292,7 +292,7 @@ $.getJSON('data.json', function(data) {
     arr = data;
     arr.layers = arr.assignments.length;
     assignments = arr.assignments;
-    //console.log(arr);
+    console.log(arr);
 
     for (i = 0; i<arr.layers; i++) {
         var group = i<19 ? 'red' : i<31 ? 'blue' : i<62 ? 'green' : 'yellow';

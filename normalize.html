@@ -25,16 +25,12 @@
 <div id="time"></div>
 files:
 <textarea id="paths" rows=30 cols=120>
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC1.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC2.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC3.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC4.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC5.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC6.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC7.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC8.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC9.gpx
-/home/jeff/workspace/stemzone-map/WORKING/data-final/brdcst/BC10.gpx
+WORKING/kml/doc.kml
+WORKING/kml/doc.kml (4)
+WORKING/kml/doc.kml (2)
+WORKING/kml/doc.kml (5)
+WORKING/kml/doc.kml (3)
+WORKING/kml/doc.kml (6)
 </textarea>
 
 
@@ -63,7 +59,7 @@ var groups = {
     yellow: {color: '#FFD400', icon: ''},
 }
 var data = {};
-var coeff = 1000 * 60 * .5; // 30 s
+var coeff = 1000 * 60 * .2; // .2m
 
 var startdate = new Date('Thu Jun 05 2014 06:00:00 GMT-0700 (PDT)');
 var enddate = new Date('Thu Jun 05 2014 14:00:00 GMT-0700 (PDT)');
@@ -78,6 +74,7 @@ $('#submit').bind('click', function() {
     var paths = $('#paths').val().split("\n");
     var i = 0;
     var ii = 0;
+    var total = paths.length;
     console.log(paths);
     
 
@@ -87,8 +84,9 @@ $('#submit').bind('click', function() {
         var filearr = filestr.split("\t");
         console.log(filearr);
         var file = filearr[0];
-        var geojson = omnivore.gpx(file.replace('/home/jeff/workspace/stemzone-map/', ''))
+        var geojson = omnivore.kml(file)
             .on('ready', function() {
+                console.log(geojson);
 
                 //console.log(geojson._layers);
 
@@ -98,6 +96,8 @@ $('#submit').bind('click', function() {
                     var coordinates = layer.feature.geometry.coordinates;
                     assignments[i] = filearr[1];
                     //console.log(coordinates);
+
+                    var last = null;
                     $.each(coordinates, function(index2, point){
                         var date = new Date(point[3]);
                         date = new Date(Math.round(date.getTime() / coeff) * coeff);
@@ -108,7 +108,21 @@ $('#submit').bind('click', function() {
                         if (data[date] == undefined) {
                             data[date] = [];
                         }
+                        if (last != null) {
+                            var latlng = L.latLng(last[1], last[0]);
+                            if (latlng != undefined) {
+                                var diff = latlng.distanceTo([point[1], point[0]]);
+                                if (diff > 150) {
+                                    i++;
+                                    total ++;
+                                    assignments[i] = filearr[1];
+                                }
+                            }
+                            
+                        }
+                        
                         data[date][i] = point;
+                        last = point;
                     });
 
                     // a little log so we can figure out times
@@ -122,7 +136,7 @@ $('#submit').bind('click', function() {
                     i++;
 
                     // We have gone through the last of the files
-                    if (i == paths.length-1) {
+                    if (i == total-1) {
                         j = 0;
                         console.log(data);
                         arr.assignments = assignments;
